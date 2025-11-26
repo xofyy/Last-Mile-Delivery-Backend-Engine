@@ -10,6 +10,7 @@ import com.murat.delivery.repository.OrderRepository;
 import com.murat.delivery.repository.RestaurantRepository;
 import com.murat.delivery.repository.UserRepository;
 import com.murat.delivery.service.OrderAssignmentService;
+import com.murat.delivery.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -46,10 +47,10 @@ public class OrderController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Restaurant restaurant = restaurantRepository.findById(orderRequest.getRestaurantId())
-                .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
 
         Order order = orderMapper.toEntity(orderRequest);
         order.setUser(user);
