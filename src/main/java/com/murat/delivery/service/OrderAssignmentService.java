@@ -14,7 +14,11 @@ import java.util.List;
 
 import com.murat.delivery.exception.BusinessException;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class OrderAssignmentService {
 
     private final CourierRepository courierRepository;
@@ -28,6 +32,7 @@ public class OrderAssignmentService {
     }
 
     @Transactional
+    @CircuitBreaker(name = "courierService", fallbackMethod = "fallbackAssignCourier")
     public void assignCourierToOrder(Order order) {
         Restaurant restaurant = order.getRestaurant();
         Point restaurantLocation = restaurant.getLocation();
@@ -58,5 +63,15 @@ public class OrderAssignmentService {
 
         order.setCourier(nearestCourier);
         orderRepository.save(order);
+    }
+
+    public void fallbackAssignCourier(Order order, Throwable t) {
+        log.error("Circuit Breaker Open! Failed to assign courier for order {}. Reason: {}", order.getId(),
+                t.getMessage());
+        // In a real system, we might queue this for later retry or assign to a
+        // "pending" pool.
+        // For now, we just log and re-throw a friendly exception so the user knows
+        // something is wrong.
+        throw new BusinessException("Service is currently unavailable. Please try again later.");
     }
 }

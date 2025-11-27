@@ -26,6 +26,17 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(io.github.resilience4j.ratelimiter.RequestNotPermitted.class)
+    public ResponseEntity<Object> handleRequestNotPermitted(io.github.resilience4j.ratelimiter.RequestNotPermitted ex) {
+        return buildErrorResponse("Too many requests", HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @ExceptionHandler(io.github.resilience4j.circuitbreaker.CallNotPermittedException.class)
+    public ResponseEntity<Object> handleCallNotPermitted(
+            io.github.resilience4j.circuitbreaker.CallNotPermittedException ex) {
+        return buildErrorResponse("Service is currently unavailable", HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Object> handleRuntimeException(RuntimeException ex) {
         // Log the real error here (e.g., slf4j)
