@@ -16,6 +16,7 @@ import com.murat.delivery.exception.BusinessException;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
+import io.github.resilience4j.retry.annotation.Retry;
 
 @Service
 @Slf4j
@@ -33,6 +34,7 @@ public class OrderAssignmentService {
 
     @Transactional
     @CircuitBreaker(name = "courierService", fallbackMethod = "fallbackAssignCourier")
+    @Retry(name = "courierService")
     public void assignCourierToOrder(Order order) {
         Restaurant restaurant = order.getRestaurant();
         Point restaurantLocation = restaurant.getLocation();

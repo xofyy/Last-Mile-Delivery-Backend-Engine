@@ -61,6 +61,17 @@ resilience4j:
         waitDurationInOpenState: 10s
         failureRateThreshold: 50
         eventConsumerBufferSize: 10
+        ignoreExceptions:
+          - com.murat.delivery.exception.BusinessException
+  retry:
+    instances:
+      courierService:
+        maxRetryAttempts: 3
+        waitDuration: 500ms
+        retryExceptions:
+          - java.lang.Exception
+        ignoreExceptions:
+          - com.murat.delivery.exception.BusinessException
   ratelimiter:
     instances:
       orderApi:
