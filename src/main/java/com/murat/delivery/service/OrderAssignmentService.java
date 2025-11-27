@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.murat.delivery.exception.BusinessException;
+
 @Service
 public class OrderAssignmentService {
 
@@ -35,7 +37,7 @@ public class OrderAssignmentService {
                 SEARCH_RADIUS_METERS);
 
         if (nearbyCouriers.isEmpty()) {
-            throw new RuntimeException("No available couriers found within " + SEARCH_RADIUS_METERS + " meters");
+            throw new BusinessException("No available couriers found within " + SEARCH_RADIUS_METERS + " meters");
         }
 
         // Find the absolute nearest among the candidates (PostGIS ST_Distance could

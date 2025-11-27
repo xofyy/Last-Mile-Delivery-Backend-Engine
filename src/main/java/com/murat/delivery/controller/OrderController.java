@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/orders")
+@Slf4j
 public class OrderController {
 
     private final OrderRepository orderRepository;
@@ -64,7 +66,7 @@ public class OrderController {
         } catch (Exception e) {
             // Log error but don't fail order creation, maybe assign later via scheduled
             // task
-            System.err.println("Failed to assign courier: " + e.getMessage());
+            log.error("Failed to assign courier: {}", e.getMessage());
         }
 
         return ResponseEntity.ok(orderMapper.toResponse(order));
