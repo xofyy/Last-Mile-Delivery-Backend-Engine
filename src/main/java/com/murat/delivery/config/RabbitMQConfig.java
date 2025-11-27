@@ -35,4 +35,9 @@ public class RabbitMQConfig {
     public MessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
+
+    @Bean
+    public Queue aiTrainingQueue() {
+        return new Queue("ai.training.data", true);
+    }
 }

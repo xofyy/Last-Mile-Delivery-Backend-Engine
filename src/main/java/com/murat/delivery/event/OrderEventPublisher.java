@@ -17,4 +17,10 @@ public class OrderEventPublisher {
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, event);
         System.out.println("Event Published: " + event);
     }
+
+    public void publishOrderCompletedEvent(Object event) {
+        // Sending to a specific queue for AI training
+        rabbitTemplate.convertAndSend("ai.training.data", event);
+        System.out.println("AI Training Event Published: " + event);
+    }
 }

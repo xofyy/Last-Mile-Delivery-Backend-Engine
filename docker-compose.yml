@@ -13,6 +13,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - delivery-network
 
   delivery-redis:
     image: redis:7-alpine
@@ -20,6 +22,8 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+    networks:
+      - delivery-network
 
   delivery-rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -31,6 +35,24 @@ services:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
     restart: unless-stopped
+    networks:
+      - delivery-network
+
+  ai-service:
+    build: ./ai-service
+    container_name: delivery-ai
+    ports:
+      - "8001:8000" # Expose on 8001 to avoid conflict if needed, or keep internal
+    environment:
+      RABBITMQ_HOST: delivery-rabbitmq
+    depends_on:
+      - delivery-rabbitmq
+    networks:
+      - delivery-network
+
+networks:
+  delivery-network:
+    driver: bridge
 
 volumes:
   postgres_data:

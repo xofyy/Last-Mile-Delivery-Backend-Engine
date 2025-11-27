@@ -63,10 +63,29 @@ This document details the comprehensive testing strategy executed for the **Last
     - **Setup:** 1000 Couriers, 100 Concurrent Orders.
     - **Result:** ✅ PASSED. All orders processed successfully.
 
-## 3. Manual Verification
-- **Swagger UI:** Accessible at `http://localhost:8080/swagger-ui.html`. All endpoints documented.
-- **Database:** Verified data integrity in PostgreSQL using `docker exec`.
-- **Infrastructure:** Docker Compose correctly orchestrates App, Postgres, Redis, and RabbitMQ.
+## 4. AI Integration & Verification
+**Objective:** Verify hybrid architecture (Java + Python) and AI capabilities.
+
+### A. End-to-End Integration (`ai_tests.ps1`)
+- **Flow:** Java Order -> RabbitMQ -> Python Consumer -> SQLite DB -> Training -> Prediction.
+- **Result:** ✅ PASSED.
+    - Data successfully propagated from Java to Python.
+    - Model training triggered successfully.
+    - Prediction endpoint returned valid demand forecast.
+
+### B. Advanced AI Verification (`ai_training_test.ps1`)
+- **Learning Verification:**
+    - **Baseline:** Demand prediction was **44**.
+    - **Injection:** 100 orders injected for specific hour.
+    - **Result:** Prediction increased to **100**. ✅ Model learns from new data.
+- **Persistence:**
+    - **Scenario:** Container restart after training.
+    - **Result:** Prediction remained **100**. ✅ Model state is persistent.
+
+## 5. Manual Verification
+- **Swagger UI:** Accessible at `http://localhost:8080/swagger-ui.html`.
+- **AI Docs:** Accessible at `http://localhost:8001/docs`.
+- **Infrastructure:** Docker Compose correctly orchestrates App, Postgres, Redis, RabbitMQ, and AI Service.
 
 ## Summary
-The system has proven to be robust, secure, and functionally correct under both normal and stress conditions.
+The system has proven to be robust, secure, and functionally correct under both normal and stress conditions. AI integration is fully verified.

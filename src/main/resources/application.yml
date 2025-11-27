@@ -31,6 +31,8 @@ server:
   port: 8080
 
 logging:
+  file:
+    name: logs/app.log
   level:
     com.murat.delivery: DEBUG
     org.springframework.web: INFO
@@ -39,6 +41,7 @@ logging:
 app:
   jwt-secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970} # Use env var in prod
   jwt-expiration-milliseconds: 604800000 # 7 days
+  ai-service-url: http://localhost:8001 # Localhost for mvn run, override in Docker
 
 management:
   endpoints:

@@ -32,17 +32,20 @@ public class OrderController {
     private final UserRepository userRepository;
     private final OrderAssignmentService orderAssignmentService;
     private final OrderMapper orderMapper;
+    private final com.murat.delivery.event.OrderEventPublisher orderEventPublisher;
 
     public OrderController(OrderRepository orderRepository,
             RestaurantRepository restaurantRepository,
             UserRepository userRepository,
             OrderAssignmentService orderAssignmentService,
-            OrderMapper orderMapper) {
+            OrderMapper orderMapper,
+            com.murat.delivery.event.OrderEventPublisher orderEventPublisher) {
         this.orderRepository = orderRepository;
         this.restaurantRepository = restaurantRepository;
         this.userRepository = userRepository;
         this.orderAssignmentService = orderAssignmentService;
         this.orderMapper = orderMapper;
+        this.orderEventPublisher = orderEventPublisher;
     }
 
     @PostMapping
@@ -61,6 +64,14 @@ public class OrderController {
         order.setRestaurant(restaurant);
 
         order = orderRepository.save(order);
+
+        // Publish event for AI training
+        com.murat.delivery.event.OrderCompletedEvent event = new com.murat.delivery.event.OrderCompletedEvent(
+                order.getId(),
+                order.getRestaurant().getId(),
+                order.getTotalAmount(),
+                order.getCreatedAt().toString());
+        orderEventPublisher.publishOrderCompletedEvent(event);
 
         // Smart Assignment
         try {

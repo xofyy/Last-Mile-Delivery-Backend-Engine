@@ -63,8 +63,27 @@ jobs:
           exit-code: '0' # Don't fail build on vulns yet, just report
           severity: 'CRITICAL,HIGH'
 
+  build-and-test-ai:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          cd ai-service
+          pip install -r requirements.txt
+          # Add linting or tests here if available
+
   docker-publish:
-    needs: build-and-test
+    needs: [build-and-test, build-and-test-ai]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -81,19 +100,38 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
+      # Build and Push Java Backend
+      - name: Extract metadata (Java)
+        id: meta-java
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
 
-      - name: Build and push Docker image
+      - name: Build and push Java Backend
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-java.outputs.tags }}
+          labels: ${{ steps.meta-java.outputs.labels }}
+
+      # Build and Push AI Service
+      - name: Extract metadata (AI)
+        id: meta-ai
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-ai
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Build and push AI Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./ai-service
+          push: true
+          tags: ${{ steps.meta-ai.outputs.tags }}
+          labels: ${{ steps.meta-ai.outputs.labels }}
