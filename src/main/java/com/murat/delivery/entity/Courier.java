@@ -3,6 +3,8 @@ package com.murat.delivery.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.locationtech.jts.geom.Point;
 
 import java.time.LocalDateTime;
 
@@ -15,20 +17,17 @@ public class Courier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String fullName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private CourierStatus status;
 
-    private Double latitude;
+    @Column(columnDefinition = "geometry(Point,4326)")
+    private Point location;
 
-    private Double longitude;
-
+    @UpdateTimestamp
     private LocalDateTime lastUpdated;
 
     @CreationTimestamp
-    @Column(updatable = false)
     private LocalDateTime createdAt;
 }

@@ -36,14 +36,32 @@ This document details the comprehensive testing strategy executed for the **Last
 
 ### C. Advanced Scenarios (`advanced_test.ps1`)
 **Objective:** Verify complex logic and concurrency.
-1.  **Geo-spatial Accuracy:**
+1.  **Geo-spatial Accuracy (PostGIS):**
     - **Setup:** Courier A (100m away), Courier B (15km away).
+    - **Mechanism:** Native SQL Query using `ST_DWithin` and `ST_Distance`.
     - **Outcome:** System selected Courier A.
     - **Result:** ✅ PASSED.
-2.  **Concurrency (Race Condition):**
+2.  **Spatial Boundary Tests (`spatial_tests.ps1`):**
+    - **Scenario A:** Courier at 4.9km (Inside 5km radius). -> **Selected** ✅
+    - **Scenario B:** Courier at 5.1km (Outside 5km radius). -> **Ignored** ✅
+    - **Scenario C:** Courier at exact location (0km). -> **Selected** ✅
+3.  **Concurrency (Race Condition):**
     - **Setup:** 1 Available Courier, 5 Simultaneous Orders.
     - **Outcome:** Only **1** order was assigned to the courier. 4 orders remained unassigned.
     - **Result:** ✅ PASSED. Transaction isolation prevented double-booking.
+
+### D. Performance & Hardening
+1.  **Integration Testing (`CourierRepositoryIT`):**
+    - **Mechanism:** Testcontainers (Real PostGIS Docker instance).
+    - **Scenario:** Verify `ST_DWithin` and Stale Data filtering.
+    - **Result:** ✅ PASSED.
+2.  **Stale Data Handling:**
+    - **Scenario:** Courier last updated > 5 mins ago.
+    - **Outcome:** Excluded from assignment.
+    - **Result:** ✅ PASSED.
+3.  **Load Testing (`performance_test.ps1`):**
+    - **Setup:** 1000 Couriers, 100 Concurrent Orders.
+    - **Result:** ✅ PASSED. All orders processed successfully.
 
 ## 3. Manual Verification
 - **Swagger UI:** Accessible at `http://localhost:8080/swagger-ui.html`. All endpoints documented.

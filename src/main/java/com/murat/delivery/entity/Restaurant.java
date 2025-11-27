@@ -3,6 +3,7 @@ package com.murat.delivery.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
+import org.locationtech.jts.geom.Point;
 
 import java.time.LocalDateTime;
 
@@ -15,18 +16,13 @@ public class Restaurant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private Double latitude;
-
-    @Column(nullable = false)
-    private Double longitude;
+    @Column(columnDefinition = "geometry(Point,4326)")
+    private Point location;
 
     private String address;
 
     @CreationTimestamp
-    @Column(updatable = false)
     private LocalDateTime createdAt;
 }
