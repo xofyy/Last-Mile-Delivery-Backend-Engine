@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: delivery-engine-app
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=delivery-postgres
+      - DB_NAME=deliverydb
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-securepassword}
+      - REDIS_HOST=delivery-redis
+      - RABBITMQ_HOST=delivery-rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - JWT_SECRET=${JWT_SECRET:-ReplaceThisWithAComplexSecretInProduction}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - delivery-postgres
+      - delivery-redis
+      - delivery-rabbitmq
+    restart: always
+    networks:
+      - delivery-network
+
+  delivery-postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: delivery-postgres-prod
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-securepassword}
+      - POSTGRES_DB=deliverydb
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - delivery-network
+
+  delivery-redis:
+    image: redis:7-alpine
+    container_name: delivery-redis-prod
+    restart: always
+    networks:
+      - delivery-network
+
+  delivery-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: delivery-rabbitmq-prod
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-guest}
+    restart: always
+    networks:
+      - delivery-network
+
+volumes:
+  postgres_prod_data:
+
+networks:
+  delivery-network:
+    driver: bridge
