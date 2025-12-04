@@ -9,14 +9,14 @@ backend:
     limits:
       cpu: "1000m"
       memory: "1024Mi"
-    livenessProbe:
-      initialDelaySeconds: 180  # Wait 180 seconds (3 minutes)
-      periodSeconds: 20         # Check every 20 seconds
-      failureThreshold: 5       # Fail fast, try 5 times
-    readinessProbe:
-      initialDelaySeconds: 180
-      periodSeconds: 20
-      failureThreshold: 5
+  livenessProbe:
+    initialDelaySeconds: 180  # Wait 180 seconds (3 minutes)
+    periodSeconds: 20         # Check every 20 seconds
+    failureThreshold: 5       # Fail fast, try 5 times
+  readinessProbe:
+    initialDelaySeconds: 180
+    periodSeconds: 20
+    failureThreshold: 5
   env:
     springProfile: "dev" # Activates dev profile in the application
 

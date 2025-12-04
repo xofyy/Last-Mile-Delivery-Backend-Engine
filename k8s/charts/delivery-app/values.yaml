@@ -30,9 +30,11 @@ backend:
   livenessProbe:
     initialDelaySeconds: 45
     periodSeconds: 10
+    failureThreshold: 3
   readinessProbe:
     initialDelaySeconds: 45
     periodSeconds: 10
+    failureThreshold: 3
   # Configuration
   env:
     springProfile: "prod"
