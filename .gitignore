@@ -72,7 +72,7 @@ Desktop.ini
 # Application specific
 logs/
 temp/
-scripts/
+scripts/PSScripts/
 
 # Python
 __pycache__/

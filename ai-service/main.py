@@ -25,6 +25,7 @@ if MONGO_URI:
         mongo_client = MongoClient(MONGO_URI)
         db = mongo_client.get_database("delivery_ai_db") # Explicitly set DB name
         predictions_collection = db["predictions"]
+        predictions_collection.create_index("timestamp", expireAfterSeconds=604800) # 7 days
         print("Connected to MongoDB Atlas!")
     except Exception as e:
         print(f"Failed to connect to MongoDB: {e}")
