@@ -1,0 +1,80 @@
+# --- GLOBAL SETTINGS ---
+global:
+  project_id: "encoded-might-480112-k4" # Your project ID
+  region: "us-central1"
+  repo_name: "delivery-repo"
+
+# --- JAVA BACKEND (Delivery Engine) ---
+backend:
+  name: delivery-engine
+  image:
+    name: "java-backend"
+    tag: "latest" # The CI/CD pipeline will overwrite this with SHA
+    pullPolicy: Always
+  replicaCount: 1
+  strategy:
+    type: Recreate # Default strategy (We use this in production as well for now)
+  containerPort: 8080
+  service:
+    type: LoadBalancer
+    port: 80
+  # Resources (Minimal default)
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1024Mi"
+  # Probes (Health Checks)
+  livenessProbe:
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  readinessProbe:
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  # Configuration
+  env:
+    springProfile: "prod"
+
+# --- PYTHON AI SERVICE ---
+ai:
+  name: ai-service
+  image:
+    name: "ai-service"
+    tag: "latest"
+    pullPolicy: Always
+  replicaCount: 1
+  containerPort: 8000
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# --- INFRASTRUCTURE (Stateful Services) ---
+postgres:
+  enabled: true
+  storage: "1Gi"
+  image: "postgis/postgis:16-3.4-alpine"
+
+redis:
+  enabled: true
+  image: "redis:7-alpine"
+
+rabbitmq:
+  enabled: true
+  image: "rabbitmq:3-management-alpine"
+
+# --- SECRETS (Left empty, populated by Pipeline) ---
+secrets:
+  postgresPassword: ""
+  rabbitmqPassword: ""
+  rabbitmqUser: "guest"
+  mongoUri: ""
+  jwtSecret: ""

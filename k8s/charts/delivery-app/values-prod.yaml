@@ -1,0 +1,26 @@
+# --- PROD ENVIRONMENT OVERRIDES ---
+
+backend:
+  replicaCount: 2 # High availability (can be 3-5 if Node count increases)
+  resources:
+    requests:
+      cpu: "100m"     # Guaranteed CPU
+      memory: "512Mi" # Guaranteed RAM
+    limits:
+      cpu: "2000m"    # Can explode up to 2 Core
+      memory: "1536Mi"
+  env:
+    springProfile: "prod"
+
+ai:
+  replicaCount: 2 # AI service should scale as well
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1024Mi"
+
+postgres:
+  storage: "10Gi" # Prod data for larger disk

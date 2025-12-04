@@ -1,0 +1,6 @@
+apiVersion: v2
+name: delivery-app
+description: A Helm chart for Last-Mile Delivery Backend Engine
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

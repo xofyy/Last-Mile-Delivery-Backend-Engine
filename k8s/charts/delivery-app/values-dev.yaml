@@ -1,0 +1,31 @@
+# --- DEV ENVIRONMENT OVERRIDES ---
+
+backend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "50m"      # Very low CPU
+      memory: "256Mi" # Java minimum RAM
+    limits:
+      cpu: "500m"
+      memory: "768Mi"
+  env:
+    springProfile: "dev" # Activates dev profile in the application
+
+ai:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "20m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+postgres:
+  storage: "1Gi" # Dev for small disk is enough
+
+# Dev environment LoadBalancer is expensive, use ClusterIP
+# backend:
+#   service:
+#     type: ClusterIP

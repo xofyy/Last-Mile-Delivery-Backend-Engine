@@ -86,7 +86,5 @@ __pycache__/
 
 # Secrets & Credentials
 key.json
-k8s/secrets.yaml
-secrets.yaml
 .env
 LEARN.md

@@ -47,4 +47,6 @@ module "gke" {
   node_count             = var.node_count
   machine_type           = var.machine_type
   master_ipv4_cidr_block = var.master_ipv4_cidr_block
+  disk_size_gb           = var.disk_size_gb
+  disk_type              = var.disk_type
 }

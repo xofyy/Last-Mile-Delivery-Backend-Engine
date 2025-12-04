@@ -38,3 +38,13 @@ variable "master_ipv4_cidr_block" {
   type        = string
   default     = "172.16.0.0/28"
 }
+
+variable "disk_size_gb" {
+  description = "Node boot disk size in GB"
+  default     = 50
+}
+
+variable "disk_type" {
+  description = "Node boot disk type"
+  default     = "pd-balanced"
+}

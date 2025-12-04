@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - main
+      - develop
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GKE_CLUSTER: delivery-cluster
-  GKE_ZONE: us-central1-a
   REPO_NAME: delivery-repo
 
 jobs:
@@ -23,6 +22,85 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    # 1. Determine Environment
+    - name: Set Environment Variables
+      run: |
+        if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+          echo "ENV_NAME=prod" >> $GITHUB_ENV
+          echo "GKE_CLUSTER=delivery-cluster-prod" >> $GITHUB_ENV
+          echo "GKE_ZONE=us-central1-a" >> $GITHUB_ENV
+        elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+          echo "ENV_NAME=dev" >> $GITHUB_ENV
+          echo "GKE_CLUSTER=delivery-cluster-dev" >> $GITHUB_ENV
+          echo "GKE_ZONE=us-central1-a" >> $GITHUB_ENV
+        fi
+
+    # Google Cloud Auth
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
+    # Build & Push with SHA Tagging
+    - name: Build and Push Images
+      run: |
+        # Define Image Names with SHA
+        AI_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/ai-service:${{ github.sha }}"
+        JAVA_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/java-backend:${{ github.sha }}"      
+
+        # AI Service Build & Push
+        docker build -t $AI_IMAGE ./ai-service
+        docker push $AI_IMAGE
+        
+        # Java Backend Build & Push
+        docker build -t $JAVA_IMAGE .
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REPO_NAME: delivery-repo
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # 1. Determine Environment
+    - name: Set Environment Variables
+      run: |
+        if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+          echo "ENV_NAME=prod" >> $GITHUB_ENV
+          echo "GKE_CLUSTER=delivery-cluster-prod" >> $GITHUB_ENV
+          echo "GKE_ZONE=us-central1-a" >> $GITHUB_ENV
+        elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+          echo "ENV_NAME=dev" >> $GITHUB_ENV
+          echo "GKE_CLUSTER=delivery-cluster-dev" >> $GITHUB_ENV
+          echo "GKE_ZONE=us-central1-a" >> $GITHUB_ENV
+        fi
 
     # Google Cloud Auth
     - id: 'auth'
@@ -54,16 +132,25 @@ jobs:
         docker build -t $JAVA_IMAGE .
         docker push $JAVA_IMAGE
 
-    # Deploy to GKE
+    # Install Helm
+    - name: Install Helm
+      uses: azure/setup-helm@v4.2.0
+
+    # Deploy to GKE using Helm
     - name: Deploy to GKE
       run: |
-        # Apply changes to k8s cluster
-        kubectl apply -f k8s/
-
-        # Update deployments with specific image SHA
-        kubectl set image deployment/ai-service ai-service=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/ai-service:${{ github.sha }}
-        kubectl set image deployment/delivery-engine delivery-engine=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/java-backend:${{ github.sha }}
+        echo "Deploying to $ENV_NAME environment..."
         
-        # Wait for rollout to complete
-        kubectl rollout status deployment/delivery-engine
-        kubectl rollout status deployment/ai-service
+        helm upgrade --install delivery-app ./k8s/charts/delivery-app \
+          -f ./k8s/charts/delivery-app/values.yaml \
+          -f ./k8s/charts/delivery-app/values-${{ env.ENV_NAME }}.yaml \
+          --set backend.image.tag=${{ github.sha }} \
+          --set ai.image.tag=${{ github.sha }} \
+          --set secrets.postgresPassword='${{ secrets.DB_PASSWORD }}' \
+          --set secrets.rabbitmqPassword='${{ secrets.RABBITMQ_PASSWORD }}' \
+          --set secrets.rabbitmqUser='${{ secrets.RABBITMQ_USER }}' \
+          --set secrets.mongoUri='${{ secrets.MONGO_URI }}' \
+          --set secrets.jwtSecret='${{ secrets.JWT_SECRET }}' \
+          --namespace default \
+          --wait \
+          --timeout 10m

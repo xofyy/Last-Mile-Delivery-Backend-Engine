@@ -1,0 +1,114 @@
+# --- AI SERVICE (PYTHON) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.ai.name }}
+spec:
+  replicas: {{ .Values.ai.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.ai.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.ai.name }}
+    spec:
+      containers:
+      - name: {{ .Values.ai.name }}
+        image: "{{ .Values.global.region }}-docker.pkg.dev/{{ .Values.global.project_id }}/{{ .Values.global.repo_name }}/{{ .Values.ai.image.name }}:{{ .Values.ai.image.tag }}"
+        imagePullPolicy: {{ .Values.ai.image.pullPolicy }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.ai.containerPort }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.ai.containerPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: {{ .Values.ai.resources.requests.cpu }}
+            memory: {{ .Values.ai.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.ai.resources.limits.cpu }}
+            memory: {{ .Values.ai.resources.limits.memory }}
+        ports:
+        - containerPort: {{ .Values.ai.containerPort }}
+        env:
+        - name: RABBITMQ_HOST
+          value: "delivery-rabbitmq"
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: mongo-uri
+---
+# --- JAVA BACKEND ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.backend.name }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  strategy:
+    type: {{ .Values.backend.strategy.type }}
+  progressDeadlineSeconds: 1200
+  selector:
+    matchLabels:
+      app: {{ .Values.backend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.backend.name }}
+    spec:
+      containers:
+      - name: {{ .Values.backend.name }}
+        image: "{{ .Values.global.region }}-docker.pkg.dev/{{ .Values.global.project_id }}/{{ .Values.global.repo_name }}/{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: {{ .Values.backend.containerPort }}
+          initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: {{ .Values.backend.containerPort }}
+          initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+        resources:
+          requests:
+            cpu: {{ .Values.backend.resources.requests.cpu }}
+            memory: {{ .Values.backend.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.backend.resources.limits.cpu }}
+            memory: {{ .Values.backend.resources.limits.memory }}
+        ports:
+        - containerPort: {{ .Values.backend.containerPort }}
+        env:
+        - name: SERVER_FORWARD_HEADERS_STRATEGY
+          value: "framework"      
+        - name: SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES
+          value: ".*"
+        - name: SPRING_PROFILES_ACTIVE
+          value: {{ .Values.backend.env.springProfile | quote }}
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://delivery-postgres:5432/deliverydb"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: postgres-password
+        - name: SPRING_DATA_REDIS_HOST
+          value: "delivery-redis"
+        - name: SPRING_RABBITMQ_HOST
+          value: "delivery-rabbitmq"
+        - name: APP_AI_SERVICE_URL
+          value: "http://{{ .Values.ai.name }}:{{ .Values.ai.containerPort }}"

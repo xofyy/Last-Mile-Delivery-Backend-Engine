@@ -49,7 +49,8 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     spot         = true
     machine_type = var.machine_type
-
+    disk_size_gb = var.disk_size_gb
+    disk_type    = var.disk_type
     # Since it is a Private Node, it will use NAT for outbound access
     tags = ["gke-node", "${var.cluster_name}-gke"]
 
