@@ -4,8 +4,8 @@ backend:
   replicaCount: 1
   resources:
     requests:
-      cpu: "50m"      # Very low CPU
-      memory: "128Mi" # Java minimum RAM
+      cpu: "100m"      # Increased from 50m
+      memory: "256Mi" # Increased from 128Mi
     limits:
       cpu: "1000m"
       memory: "1024Mi"
@@ -24,11 +24,11 @@ ai:
   replicaCount: 1
   resources:
     requests:
-      cpu: "10m"
-      memory: "32Mi"
+      cpu: "50m"
+      memory: "128Mi"
     limits:
-      cpu: "200m"
-      memory: "256Mi"
+      cpu: "500m"
+      memory: "512Mi"
 
 postgres:
   storage: "1Gi" # Dev for small disk is enough
