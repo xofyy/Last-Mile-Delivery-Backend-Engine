@@ -19,6 +19,13 @@ spec:
         image: {{ .Values.redis.image }}
         ports:
         - containerPort: 6379
+        resources:
+          requests:
+            cpu: {{ .Values.redis.resources.requests.cpu }}
+            memory: {{ .Values.redis.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.redis.resources.limits.cpu }}
+            memory: {{ .Values.redis.resources.limits.memory }}
 ---
 apiVersion: v1
 kind: Service
@@ -54,6 +61,13 @@ spec:
         ports:
         - containerPort: 5672
         - containerPort: 15672
+        resources:
+          requests:
+            cpu: {{ .Values.rabbitmq.resources.requests.cpu }}
+            memory: {{ .Values.rabbitmq.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.rabbitmq.resources.limits.cpu }}
+            memory: {{ .Values.rabbitmq.resources.limits.memory }}
         env:
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
@@ -103,6 +117,13 @@ spec:
         image: {{ .Values.postgres.image }}
         ports:
         - containerPort: 5432
+        resources:
+          requests:
+            cpu: {{ .Values.postgres.resources.requests.cpu }}
+            memory: {{ .Values.postgres.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.postgres.resources.limits.cpu }}
+            memory: {{ .Values.postgres.resources.limits.memory }}
         env:
         - name: POSTGRES_USER
           value: "postgres"
