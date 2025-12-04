@@ -17,6 +17,18 @@ spec:
       - name: ai-service
         # Python image at Google Artifact Registry
         image: us-central1-docker.pkg.dev/encoded-might-480112-k4/delivery-repo/ai-service:v1
+        livenessProbe:
+          httpGet:
+            path: / # Ana sayfaya ping atar
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
         resources:
           requests:
             cpu: "50m" # Initially allocate 0.1 CPU core
@@ -67,6 +79,18 @@ spec:
       - name: delivery-engine
         # Java image at Google Artifact Registry
         image: us-central1-docker.pkg.dev/encoded-might-480112-k4/delivery-repo/java-backend:v1
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 45 # Java geç açılır, hemen öldürme
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 45
+          periodSeconds: 10
         resources:
           requests:
             cpu: "50m" # Java starts with 0.25 CPU core
