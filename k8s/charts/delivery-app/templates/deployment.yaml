@@ -75,12 +75,14 @@ spec:
             port: {{ .Values.backend.containerPort }}
           initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.backend.livenessProbe.failureThreshold }}
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
             port: {{ .Values.backend.containerPort }}
           initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.backend.readinessProbe.failureThreshold }}
         resources:
           requests:
             cpu: {{ .Values.backend.resources.requests.cpu }}
