@@ -19,7 +19,7 @@ spec:
         image: us-central1-docker.pkg.dev/encoded-might-480112-k4/delivery-repo/ai-service:v1
         resources:
           requests:
-            cpu: "100m" # Initially allocate 0.1 CPU core
+            cpu: "50m" # Initially allocate 0.1 CPU core
             memory: "128Mi"
           limits:
             cpu: "500m" # Allow up to 0.5 CPU core
@@ -64,7 +64,7 @@ spec:
         image: us-central1-docker.pkg.dev/encoded-might-480112-k4/delivery-repo/java-backend:v1
         resources:
           requests:
-            cpu: "250m" # Java starts with 0.25 CPU core
+            cpu: "50m" # Java starts with 0.25 CPU core
             memory: "512Mi"
           limits:
             cpu: "2000m" # Allow up to 2 CPU core
