@@ -73,3 +73,19 @@ Desktop.ini
 logs/
 temp/
 scripts/
+
+# Python
+__pycache__/
+*.pyc
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Secrets & Credentials
+key.json
+k8s/secrets.yaml
+secrets.yaml
+.env
