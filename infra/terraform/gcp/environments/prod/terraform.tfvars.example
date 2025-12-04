@@ -1,0 +1,12 @@
+project_id = "project-id"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+cluster_name = "delivery-cluster-prod"
+node_count   = 2
+machine_type = "e2-medium"
+
+vpc_name    = "delivery-vpc-prod"
+subnet_name = "delivery-subnet-prod"
+
+master_ipv4_cidr_block = "172.16.0.0/28"

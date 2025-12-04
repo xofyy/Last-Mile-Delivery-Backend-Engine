@@ -18,7 +18,7 @@ variable "zone" {
 variable "cluster_name" {
   description = "The name of the GKE cluster"
   type        = string
-  default     = "delivery-cluster"
+  default     = "delivery-cluster-prod"
 }
 
 variable "node_count" {
@@ -36,13 +36,13 @@ variable "machine_type" {
 variable "vpc_name" {
   description = "Name of the VPC network"
   type        = string
-  default     = "delivery-vpc"
+  default     = "delivery-vpc-prod"
 }
 
 variable "subnet_name" {
   description = "Name of the subnet"
   type        = string
-  default     = "delivery-subnet"
+  default     = "delivery-subnet-prod"
 }
 
 variable "subnet_cidr" {
@@ -61,4 +61,10 @@ variable "service_range_cidr" {
   description = "CIDR range for services"
   type        = string
   default     = "10.2.0.0/20"
+}
+
+variable "master_ipv4_cidr_block" {
+  description = "The IP range in CIDR notation to use for the hosted master network"
+  type        = string
+  default     = "172.16.0.0/28"
 }
