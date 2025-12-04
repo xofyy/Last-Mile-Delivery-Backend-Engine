@@ -75,16 +75,27 @@ jobs:
       run: |
         echo "Deploying to $ENV_NAME environment..."
         
+        # Create a temporary secrets file to avoid parsing issues with special chars
+        cat <<EOF > secrets.yaml
+        secrets:
+          postgresPassword: |-
+            ${{ secrets.DB_PASSWORD }}
+          rabbitmqPassword: |-
+            ${{ secrets.RABBITMQ_PASSWORD }}
+          rabbitmqUser: |-
+            ${{ secrets.RABBITMQ_USER }}
+          mongoUri: |-
+            ${{ secrets.MONGO_URI }}
+          jwtSecret: |-
+            ${{ secrets.JWT_SECRET }}
+        EOF
+
         helm upgrade --install delivery-app ./k8s/charts/delivery-app \
           -f ./k8s/charts/delivery-app/values.yaml \
           -f ./k8s/charts/delivery-app/values-${{ env.ENV_NAME }}.yaml \
+          -f secrets.yaml \
           --set backend.image.tag=${{ github.sha }} \
           --set ai.image.tag=${{ github.sha }} \
-          --set secrets.postgresPassword='${{ secrets.DB_PASSWORD }}' \
-          --set secrets.rabbitmqPassword='${{ secrets.RABBITMQ_PASSWORD }}' \
-          --set secrets.rabbitmqUser='${{ secrets.RABBITMQ_USER }}' \
-          --set secrets.mongoUri='${{ secrets.MONGO_URI }}' \
-          --set secrets.jwtSecret='${{ secrets.JWT_SECRET }}' \
           --namespace default \
           --wait \
           --timeout 10m
