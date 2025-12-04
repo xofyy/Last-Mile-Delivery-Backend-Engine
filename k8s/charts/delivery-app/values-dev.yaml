@@ -5,9 +5,9 @@ backend:
   resources:
     requests:
       cpu: "50m"      # Very low CPU
-      memory: "256Mi" # Java minimum RAM
+      memory: "128Mi" # Java minimum RAM
     limits:
-      cpu: "500m"
+      cpu: "1000m"
       memory: "768Mi"
   env:
     springProfile: "dev" # Activates dev profile in the application
@@ -16,8 +16,8 @@ ai:
   replicaCount: 1
   resources:
     requests:
-      cpu: "20m"
-      memory: "64Mi"
+      cpu: "10m"
+      memory: "32Mi"
     limits:
       cpu: "200m"
       memory: "256Mi"
