@@ -8,7 +8,7 @@ backend:
       memory: "128Mi" # Java minimum RAM
     limits:
       cpu: "1000m"
-      memory: "768Mi"
+      memory: "1024Mi"
     livenessProbe:
       initialDelaySeconds: 180  # Wait 180 seconds (3 minutes)
       periodSeconds: 20         # Check every 20 seconds
