@@ -23,7 +23,7 @@ predictions_collection = None
 if MONGO_URI:
     try:
         mongo_client = MongoClient(MONGO_URI)
-        db = mongo_client.get_database() # Uses the db name from URI
+        db = mongo_client.get_database("delivery_ai_db") # Explicitly set DB name
         predictions_collection = db["predictions"]
         print("Connected to MongoDB Atlas!")
     except Exception as e:
