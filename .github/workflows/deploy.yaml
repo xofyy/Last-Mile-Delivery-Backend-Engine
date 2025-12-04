@@ -1,0 +1,69 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: delivery-cluster
+  GKE_ZONE: us-central1-a
+  REPO_NAME: delivery-repo
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Google Cloud Auth
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
+    # Build & Push with SHA Tagging
+    - name: Build and Push Images
+      run: |
+        # Define Image Names with SHA
+        AI_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/ai-service:${{ github.sha }}"
+        JAVA_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/java-backend:${{ github.sha }}"      
+
+        # AI Service Build & Push
+        docker build -t $AI_IMAGE ./ai-service
+        docker push $AI_IMAGE
+        
+        # Java Backend Build & Push
+        docker build -t $JAVA_IMAGE .
+        docker push $JAVA_IMAGE
+
+    # Deploy to GKE
+    - name: Deploy to GKE
+      run: |
+        # Apply changes to k8s cluster
+        kubectl apply -f k8s/
+
+        # Update deployments with specific image SHA
+        kubectl set image deployment/ai-service ai-service=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/ai-service:${{ github.sha }}
+        kubectl set image deployment/delivery-engine delivery-engine=us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/java-backend:${{ github.sha }}
+        
+        # Wait for rollout to complete
+        kubectl rollout status deployment/delivery-engine
+        kubectl rollout status deployment/ai-service

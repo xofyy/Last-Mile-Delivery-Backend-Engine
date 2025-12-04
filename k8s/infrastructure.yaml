@@ -1,0 +1,133 @@
+# --- REDIS ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delivery-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delivery-redis
+  template:
+    metadata:
+      labels:
+        app: delivery-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delivery-redis # Java will connect to this service
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: delivery-redis
+
+---
+# --- RABBITMQ ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delivery-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delivery-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: delivery-rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management-alpine
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: rabbitmq-user
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: rabbitmq-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delivery-rabbitmq # Java and Python will connect to this service
+spec:
+  ports:
+  - port: 5672
+    name: amqp
+  - port: 15672
+    name: management
+  selector:
+    app: delivery-rabbitmq
+
+---
+# --- POSTGRESQL (POSTGIS) - STATEFULSET ---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: delivery-postgres
+spec:
+  serviceName: "delivery-postgres"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delivery-postgres
+  template:
+    metadata:
+      labels:
+        app: delivery-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgis/postgis:16-3.4-alpine # Your custom image
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_DB
+          value: "deliverydb"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delivery-postgres # Java will connect to this service
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: delivery-postgres
