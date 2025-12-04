@@ -7,6 +7,8 @@ from datetime import datetime
 
 DB_PATH = "training_data.db"
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
 QUEUE_NAME = "ai.training.data"
 
 def init_db():
@@ -51,8 +53,9 @@ def start_consuming():
     # Retry connection logic
     while True:
         try:
-            connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=RABBITMQ_HOST))
+            credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
+            parameters = pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials)
+            connection = pika.BlockingConnection(parameters)
             channel = connection.channel()
             
             channel.queue_declare(queue=QUEUE_NAME, durable=True)
