@@ -5,9 +5,36 @@ import threading
 import consumer
 import pandas as pd
 import sqlite3
+import os
+from pymongo import MongoClient
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv() # Load environment variables from .env file
 
 app = FastAPI()
 model = DemandModel()
+
+# MongoDB Setup
+MONGO_URI = os.getenv("MONGO_URI")
+mongo_client = None
+predictions_collection = None
+
+if MONGO_URI:
+    try:
+        mongo_client = MongoClient(MONGO_URI)
+        db = mongo_client.get_database() # Uses the db name from URI
+        predictions_collection = db["predictions"]
+        print("Connected to MongoDB Atlas!")
+    except Exception as e:
+        print(f"Failed to connect to MongoDB: {e}")
+
+def log_prediction_to_mongo(data: dict):
+    if predictions_collection is not None:
+        try:
+            predictions_collection.insert_one(data)
+        except Exception as e:
+            print(f"Failed to log to MongoDB: {e}")
 
 # Start RabbitMQ consumer in a background thread
 def run_consumer():
@@ -27,14 +54,21 @@ def read_root():
     return {"message": "AI Demand Prediction Service is Running 🚀"}
 
 @app.get("/predict")
-def predict(hour: int, day: int):
+def predict(hour: int, day: int, background_tasks: BackgroundTasks):
     prediction = model.predict(hour, day)
-    return {
+    
+    result = {
         "hour": hour,
         "day": day,
         "predicted_demand": prediction,
-        "region": "Kadikoy" # Mock region for now
+        "region": "Kadikoy", # Mock region for now
+        "timestamp": datetime.utcnow()
     }
+
+    # Log to MongoDB asynchronously
+    background_tasks.add_task(log_prediction_to_mongo, result.copy())
+
+    return result
 
 @app.get("/debug/orders")
 def debug_orders():

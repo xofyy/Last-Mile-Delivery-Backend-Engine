@@ -28,6 +28,11 @@ spec:
         env:
         - name: RABBITMQ_HOST
           value: "delivery-rabbitmq"
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: mongo-uri
 ---
 apiVersion: v1
 kind: Service
