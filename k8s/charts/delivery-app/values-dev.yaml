@@ -4,15 +4,15 @@ backend:
   replicaCount: 1
   resources:
     requests:
-      cpu: "200m"      # Increased from 50m
-      memory: "512Mi" # Increased from 128Mi
+      cpu: "10m"      
+      memory: "512Mi" 
     limits:
       cpu: "1000m"
       memory: "1536Mi"
   livenessProbe:
-    initialDelaySeconds: 90  # Wait 180 seconds (3 minutes)
-    periodSeconds: 15         # Check every 20 seconds
-    failureThreshold: 5       # Fail fast, try 5 times
+    initialDelaySeconds: 90  
+    periodSeconds: 15         
+    failureThreshold: 5
   readinessProbe:
     initialDelaySeconds: 90
     periodSeconds: 15
@@ -24,7 +24,7 @@ ai:
   replicaCount: 1
   resources:
     requests:
-      cpu: "50m"
+      cpu: "10m"
       memory: "128Mi"
     limits:
       cpu: "500m"
@@ -34,7 +34,7 @@ postgres:
   storage: "1Gi" # Dev for small disk is enough
   resources:
     requests:
-      cpu: "100m"
+      cpu: "10m"
       memory: "256Mi"
     limits:
       cpu: "500m"
@@ -43,7 +43,7 @@ postgres:
 rabbitmq:
   resources:
     requests:
-      cpu: "80m"
+      cpu: "10m"
       memory: "150Mi"
     limits:
       cpu: "500m"
@@ -52,7 +52,7 @@ rabbitmq:
 redis:
   resources:
     requests:
-      cpu: "20m"
+      cpu: "5m"
       memory: "64Mi"
     limits:
       cpu: "200m"
