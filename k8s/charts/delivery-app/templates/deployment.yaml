@@ -122,5 +122,15 @@ spec:
           value: "delivery-redis"
         - name: SPRING_RABBITMQ_HOST
           value: "delivery-rabbitmq"
+        - name: SPRING_RABBITMQ_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: rabbitmq-user
+        - name: SPRING_RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: rabbitmq-password
         - name: APP_AI_SERVICE_URL
           value: "http://{{ .Values.ai.name }}:{{ .Values.ai.containerPort }}"
