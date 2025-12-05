@@ -4,11 +4,11 @@ backend:
   replicaCount: 1 # Reduced to 1 to fit in small cluster
   resources:
     requests:
-      cpu: "100m"     # Guaranteed CPU
+      cpu: "10m"      # Minimal CPU to force scheduling
       memory: "512Mi" # Guaranteed RAM
     limits:
-      cpu: "2000m"    # Can explode up to 2 Core
-      memory: "1536Mi"
+      cpu: "1000m"    # Reduced limit
+      memory: "1024Mi"
   env:
     springProfile: "prod"
 

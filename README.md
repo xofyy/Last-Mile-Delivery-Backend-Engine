@@ -44,9 +44,9 @@ The system consists of two main services and shared infrastructure components, p
 
 ```mermaid
 graph TD
-    Client[Client App] -->|HTTPS| CF[Cloudflare (DNS/WAF)]
-    CF -->|Proxied| LB[Load Balancer (Ingress)]
-    LB --> Backend[Java Backend Service]
+    Client["Client App"] -->|HTTPS| CF["Cloudflare (DNS/WAF)"]
+    CF -->|Proxied| LB["Load Balancer (Ingress)"]
+    LB --> Backend["Java Backend Service"]
     
     subgraph "Kubernetes Cluster (GKE)"
         Backend -->|JDBC| DB[(PostgreSQL + PostGIS)]
