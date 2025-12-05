@@ -132,5 +132,10 @@ spec:
             secretKeyRef:
               name: delivery-secrets
               key: rabbitmq-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: delivery-secrets
+              key: jwt-secret
         - name: APP_AI_SERVICE_URL
           value: "http://{{ .Values.ai.name }}:{{ .Values.ai.containerPort }}"
