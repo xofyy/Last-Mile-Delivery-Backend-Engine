@@ -1,7 +1,7 @@
 # --- PROD ENVIRONMENT OVERRIDES ---
 
 backend:
-  replicaCount: 2 # High availability (can be 3-5 if Node count increases)
+  replicaCount: 1 # Reduced to 1 to fit in small cluster
   resources:
     requests:
       cpu: "100m"     # Guaranteed CPU
@@ -13,7 +13,7 @@ backend:
     springProfile: "prod"
 
 ai:
-  replicaCount: 2 # AI service should scale as well
+  replicaCount: 1 # Reduced to 1 to fit in small cluster
   resources:
     requests:
       cpu: "50m"
