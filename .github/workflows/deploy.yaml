@@ -9,34 +9,21 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REPO_NAME: delivery-repo
+  REGION: us-central1
 
 jobs:
-  setup-build-publish-deploy:
-    name: Setup, Build, Publish, and Deploy
+  # --- JOB 1: Build Java Backend (Parallel) ---
+  build-backend:
+    name: Build Backend
     runs-on: ubuntu-latest
-    
     permissions:
       contents: 'read'
       id-token: 'write'
-
+    
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    # 1. Determine Environment
-    - name: Set Environment Variables
-      run: |
-        if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
-          echo "ENV_NAME=prod" >> $GITHUB_ENV
-          echo "GKE_CLUSTER=delivery-cluster-prod" >> $GITHUB_ENV
-          echo "GKE_ZONE=us-central1-a" >> $GITHUB_ENV
-        elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
-          echo "ENV_NAME=dev" >> $GITHUB_ENV
-          echo "GKE_CLUSTER=delivery-cluster-dev" >> $GITHUB_ENV
-          echo "GKE_ZONE=us-central1-a" >> $GITHUB_ENV
-        fi
-
-    # Google Cloud Auth
     - id: 'auth'
       uses: 'google-github-actions/auth@v2'
       with:
@@ -45,37 +32,94 @@ jobs:
     - name: Configure Docker
       run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and Push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: Dockerfile
+        push: true
+        tags: us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/java-backend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # --- JOB 2: Build AI Service (Parallel) ---
+  build-ai:
+    name: Build AI Service
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and Push AI Service
+      uses: docker/build-push-action@v5
+      with:
+        context: ./ai-service
+        file: ./ai-service/Dockerfile
+        push: true
+        tags: us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ai-service:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # --- JOB 3: Deploy (Waits for Builds) ---
+  deploy:
+    name: Deploy
+    needs: [build-backend, build-ai]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set Environment Variables
+      run: |
+        if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+          echo "ENV_NAME=prod" >> $GITHUB_ENV
+          echo "GKE_CLUSTER=delivery-cluster-prod" >> $GITHUB_ENV
+        elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+          echo "ENV_NAME=dev" >> $GITHUB_ENV
+          echo "GKE_CLUSTER=delivery-cluster-dev" >> $GITHUB_ENV
+        fi
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
     - name: Get GKE Credentials
       uses: google-github-actions/get-gke-credentials@v2
       with:
         cluster_name: ${{ env.GKE_CLUSTER }}
-        location: ${{ env.GKE_ZONE }}
+        location: us-central1-a
 
-    # Build & Push with SHA Tagging
-    - name: Build and Push Images
-      run: |
-        # Define Image Names with SHA
-        AI_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/ai-service:${{ github.sha }}"
-        JAVA_IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/java-backend:${{ github.sha }}"      
-
-        # AI Service Build & Push
-        docker build -t $AI_IMAGE ./ai-service
-        docker push $AI_IMAGE
-        
-        # Java Backend Build & Push
-        docker build -t $JAVA_IMAGE .
-        docker push $JAVA_IMAGE
-
-    # Install Helm
     - name: Install Helm
       uses: azure/setup-helm@v4.2.0
 
-    # Deploy to GKE using Helm
     - name: Deploy to GKE
       run: |
         echo "Deploying to $ENV_NAME environment..."
         
-        # Create a temporary secrets file to avoid parsing issues with special chars
+        # Create secrets file
         cat <<EOF > secrets.yaml
         secrets:
           postgresPassword: |-
@@ -90,6 +134,7 @@ jobs:
             ${{ secrets.JWT_SECRET }}
         EOF
 
+        # Helm Upgrade
         helm upgrade --install delivery-app ./k8s/charts/delivery-app \
           -f ./k8s/charts/delivery-app/values.yaml \
           -f ./k8s/charts/delivery-app/values-${{ env.ENV_NAME }}.yaml \
