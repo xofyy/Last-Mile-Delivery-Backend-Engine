@@ -8,9 +8,14 @@ on:
     branches:
       - develop
 
+concurrency:
+  group: release-coordinator-${{ github.sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
+  issues: write # Required for label creation
   actions: read
 
 jobs:
@@ -29,6 +34,16 @@ jobs:
           COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           echo "Checking workflow statuses for commit: $COMMIT_SHA"
+
+          # 0. Early Exit: Check if PR already exists
+          # This handles the "Fan-In" problem (3 workflows triggering this 3 times).
+          # If the first run created the PR, subsequent runs will see it and exit gracefully.
+          PR_EXISTS=$(gh pr list --base main --head develop --json url --jq '.[0].url')
+          if [[ -n "$PR_EXISTS" ]]; then
+            echo "✅ PR already exists: $PR_EXISTS"
+            echo "The work is already done. Exiting gracefully."
+            exit 0
+          fi
           
           # List of workflows that MUST pass
           REQUIRED_WORKFLOWS=("Build and Deploy to GKE" "Production CI/CD Pipeline" "Infrastructure Policy Check")
