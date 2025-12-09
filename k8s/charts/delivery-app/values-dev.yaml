@@ -20,7 +20,7 @@ backend:
   env:
     springProfile: "dev" # Activates dev profile in the application
   image:
-    tag: 8b24d5c7f5d5210f09c752f6c06566a47f5b4898
+    tag: a2e32e2053e39827405072997e96d94e133537b0
 ai:
   replicaCount: 1
   resources:
@@ -31,7 +31,7 @@ ai:
       cpu: "500m"
       memory: "512Mi"
   image:
-    tag: 8b24d5c7f5d5210f09c752f6c06566a47f5b4898
+    tag: a2e32e2053e39827405072997e96d94e133537b0
 postgres:
   storage: "1Gi" # Dev for small disk is enough
   resources:
