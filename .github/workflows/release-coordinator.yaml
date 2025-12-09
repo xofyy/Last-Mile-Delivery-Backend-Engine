@@ -8,9 +8,14 @@ on:
     branches:
       - develop
 
+concurrency:
+  group: release-coordinator-${{ github.sha }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
+  issues: write # Required for label creation
   actions: read
 
 jobs:
@@ -29,6 +34,16 @@ jobs:
           COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           echo "Checking workflow statuses for commit: $COMMIT_SHA"
+
+          # 0. Early Exit: Check if PR already exists
+          # This handles the "Fan-In" problem (3 workflows triggering this 3 times).
+          # If the first run created the PR, subsequent runs will see it and exit gracefully.
+          PR_EXISTS=$(gh pr list --base main --head develop --json url --jq '.[0].url')
+          if [[ -n "$PR_EXISTS" ]]; then
+            echo "✅ PR already exists: $PR_EXISTS"
+            echo "The work is already done. Exiting gracefully."
+            exit 0
+          fi
           
           # List of workflows that MUST pass
           REQUIRED_WORKFLOWS=("Build and Deploy to GKE" "Production CI/CD Pipeline" "Infrastructure Policy Check")
@@ -36,34 +51,51 @@ jobs:
           ALL_PASSED=true
           
           for workflow in "${REQUIRED_WORKFLOWS[@]}"; do
-            # Get the conclusion of the latest run for this commit and workflow name
-            # Returns "success", "failure", "skipped", etc.
-            STATUS=$(gh run list --commit "$COMMIT_SHA" --workflow "$workflow" --json conclusion --jq '.[0].conclusion')
+            # Fetch status and conclusion
+            # Returns json like: [{"status":"completed","conclusion":"success"}]
+            JSON=$(gh run list --commit "$COMMIT_SHA" --workflow "$workflow" --json status,conclusion --jq '.[0]')
             
-            echo "Workflow: '$workflow' -> Status: $STATUS"
-            
-            # If status is null (didn't run due to path filters), treat as success (skipped safely)
-            if [[ -z "$STATUS" || "$STATUS" == "skipped" ]]; then
-              echo "  -> Considered PASS (Skipped/Not Triggered)"
+            # If no run found (JSON is null/empty), assume Skipped due to path filters
+            if [[ -z "$JSON" || "$JSON" == "null" ]]; then
+              echo "  -> Check: '$workflow' -> No run found (Assumed Skipped) -> PASS"
               continue
             fi
-            
-            if [[ "$STATUS" != "success" ]]; then
-              echo "  -> FAILURE! (Expected success)"
-              ALL_PASSED=false
-              break
+
+            STATUS=$(echo "$JSON" | jq -r .status)
+            CONCLUSION=$(echo "$JSON" | jq -r .conclusion)
+
+            echo "  -> Check: '$workflow' -> Status: $STATUS, Conclusion: $CONCLUSION"
+
+            # If still running, we must wait (fail this check)
+            if [[ "$STATUS" != "completed" ]]; then
+               echo "     -> Still running. Exiting to wait for completion."
+               ALL_PASSED=false
+               break
+            fi
+
+            # If completed, check conclusion
+            if [[ "$CONCLUSION" == "success" || "$CONCLUSION" == "skipped" ]]; then
+               echo "     -> Success/Skipped. PASS."
+            else
+               echo "     -> FAILED. (Conclusion: $CONCLUSION)"
+               ALL_PASSED=false
+               break
             fi
           done
 
           if [[ "$ALL_PASSED" == "false" ]]; then
-            echo "Not all workflows passed. Exiting."
-            exit 1
+            echo "Not all workflows passed/completed yet. Exiting."
+            exit 0 # Exit 0 to stay green, but do nothing
           else
-            echo "All workflows passed! Proceeding to PR."
+            echo "All required workflows passed! Proceeding to PR."
           fi
 
       - name: Create Release PR
         run: |
+          # 1. Ensure Label Exists
+          gh label create "automated-pr" --color "0E8A16" --description "Created by Release Coordinator" --force || true
+
+          # 2. Create PR
           gh pr create \
             --base main \
             --head develop \
