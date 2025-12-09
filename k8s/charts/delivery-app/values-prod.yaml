@@ -7,17 +7,17 @@ backend:
     minReplicas: 1
     maxReplicas: 5
     targetCPUUtilizationPercentage: 70
-  
   resources:
     requests:
-      cpu: "10m"      # Minimal CPU to force scheduling
+      cpu: "10m" # Minimal CPU to force scheduling
       memory: "512Mi" # Guaranteed RAM
     limits:
-      cpu: "1000m"    # Reduced limit
+      cpu: "1000m" # Reduced limit
       memory: "1024Mi"
   env:
     springProfile: "prod"
-
+  image:
+    tag: ca9c04f3458e3b60ed4d475cf00f67b899332339
 ai:
   replicaCount: 1 # Reduced to 1 to fit in small cluster
   autoscaling:
@@ -25,7 +25,6 @@ ai:
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
-
   resources:
     requests:
       cpu: "50m"
@@ -33,6 +32,7 @@ ai:
     limits:
       cpu: "1000m"
       memory: "1024Mi"
-
+  image:
+    tag: ca9c04f3458e3b60ed4d475cf00f67b899332339
 postgres:
   storage: "10Gi" # Prod data for larger disk
