@@ -84,7 +84,7 @@ jobs:
     needs: [build-backend, build-ai]
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
+      contents: 'write' # Required for GitOps (pushing back changes)
       id-token: 'write'
 
     steps:
@@ -124,7 +124,7 @@ jobs:
         git pull origin ${{ github.ref_name }}
 
         # Install yq (Portable command-line YAML processor)
-        wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
+        sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
 
         # Update values file
         VALUES_FILE="k8s/charts/delivery-app/values-${ENV_NAME}.yaml"
