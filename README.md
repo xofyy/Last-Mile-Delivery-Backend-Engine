@@ -58,7 +58,9 @@ graph TD
         AI -->|Log Metrics| Mongo[(MongoDB Atlas)]
 
         Backend -.->|Scrape Metrics| Prom[Prometheus]
+        Backend -.->|OTLP Traces| Tempo[Grafana Tempo]
         Prom --> Grafana[Grafana Dashboard]
+        Tempo --> Grafana
     end
 ```
 
@@ -67,7 +69,19 @@ The cluster is equipped with a comprehensive monitoring stack installed via **He
 
 -   **Prometheus:** Scrapes metrics from the **Java Backend** (via Spring Boot Actuator `/actuator/prometheus`) and Kubernetes nodes.
 -   **Grafana:** Visualizes system health, request rates, latency, and resource usage (CPU/Memory) through custom dashboards.
--   **Spring Boot Actuator:** Exposes application-level metrics (JVM, JDBC, HTTP) for Prometheus to consume.
+-   **Grafana Tempo:** Provides **Distributed Tracing** to visualize the lifecycle of requests across microservices.
+-   **Spring Boot Actuator:** Exposes application-level metrics (JVM, JVM, JDBC, HTTP) for Prometheus to consume.
+
+### Accessing Dashboards
+To access the centralized logging and tracing dashboards:
+
+1.  **Establish Port Forward:**
+    ```bash
+    kubectl port-forward svc/loki-grafana -n monitoring 3000:80
+    ```
+2.  **Open Grafana:** Navigate to [http://localhost:3000](http://localhost:3000)
+3.  **Login:** Default user is `admin`.
+4.  **Explore:** Use the **Explore** tab to query logs (`Loki`) or search traces (`Tempo`).
 
 ## 🌐 External Services & Integrations
 Since this project relies on modern cloud-native principles, some components are managed externally and integrated via configuration rather than code:

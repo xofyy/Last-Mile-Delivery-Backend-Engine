@@ -1,0 +1,37 @@
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
+
+prometheus:
+  enabled: true
+  alertmanager:
+    enabled: false
+  server:
+    persistentVolume:
+      enabled: false
+
+promtail:
+  enabled: true
+
+grafana:
+  enabled: true
+  sidecar:
+    datasources:
+      enabled: true
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Tempo
+          type: tempo
+          access: proxy
+          orgId: 1
+          url: http://tempo.monitoring.svc.cluster.local:3200
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+          apiVersion: 1
+          uid: tempo
