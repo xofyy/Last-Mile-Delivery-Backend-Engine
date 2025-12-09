@@ -17,7 +17,7 @@ backend:
   env:
     springProfile: "prod"
   image:
-    tag: 62c1c86a8a4b332cdfbf8c844aa6dc587d166585
+    tag: a65583866f6a82f7a6641ccbe536fd214dda6bc7
 ai:
   replicaCount: 1 # Reduced to 1 to fit in small cluster
   autoscaling:
@@ -33,6 +33,6 @@ ai:
       cpu: "1000m"
       memory: "1024Mi"
   image:
-    tag: 62c1c86a8a4b332cdfbf8c844aa6dc587d166585
+    tag: a65583866f6a82f7a6641ccbe536fd214dda6bc7
 postgres:
   storage: "10Gi" # Prod data for larger disk
