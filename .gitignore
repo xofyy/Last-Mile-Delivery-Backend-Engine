@@ -88,3 +88,4 @@ __pycache__/
 key.json
 .env
 LEARN.md
+secrets_config.env

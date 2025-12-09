@@ -52,3 +52,24 @@ module "gke" {
   disk_size_gb           = var.disk_size_gb
   disk_type              = var.disk_type
 }
+
+module "secret_manager" {
+  source     = "../../modules/secret-manager"
+  project_id = var.project_id
+  secret_ids = [
+    "postgres-password",
+    "rabbitmq-password",
+    "rabbitmq-user",
+    "mongo-uri",
+    "jwt-secret"
+  ]
+}
+
+module "workload_identity" {
+  source             = "../../modules/workload-identity"
+  project_id         = var.project_id
+  service_account_id = "external-secrets-sa"
+  display_name       = "External Secrets Operator SA"
+  k8s_namespace      = "external-secrets"
+  k8s_sa_name        = "external-secrets"
+}

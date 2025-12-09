@@ -143,3 +143,7 @@ spec:
               key: jwt-secret
         - name: APP_AI_SERVICE_URL
           value: "http://{{ include "delivery-app.fullname" . }}-ai:{{ .Values.ai.containerPort }}"
+        - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
+          value: {{ .Values.backend.observability.tracing.samplingProbability | quote }}
+        - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+          value: {{ .Values.backend.observability.tracing.endpoint | quote }}
