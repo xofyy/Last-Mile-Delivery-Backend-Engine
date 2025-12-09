@@ -1,10 +1,9 @@
 from constructs import Construct
-from cdktf_cdktf_provider_google.secret_manager_secret import SecretManagerSecret
-from cdktf_cdktf_provider_google.service_account import ServiceAccount
-from cdktf_cdktf_provider_google.project_iam_member import ProjectIamMember
-from cdktf_cdktf_provider_google.service_account_iam_binding import ServiceAccountIamBinding
-from cdktf_cdktf_provider_google.secret_manager_secret_replication import SecretManagerSecretReplication
-from cdktf_cdktf_provider_google.secret_manager_secret_replication_auto import SecretManagerSecretReplicationAuto
+from cdktf_cdktf_provider_google.secret_manager_secret import (
+    SecretManagerSecret,
+    SecretManagerSecretReplication,
+    SecretManagerSecretReplicationAuto
+)
 
 class StandardSecrets(Construct):
     def __init__(self, scope: Construct, id: str, secret_ids: list[str]):
