@@ -4,6 +4,9 @@ from cdktf_cdktf_provider_google.secret_manager_secret import (
     SecretManagerSecretReplication,
     SecretManagerSecretReplicationAuto
 )
+from cdktf_cdktf_provider_google.service_account import ServiceAccount
+from cdktf_cdktf_provider_google.project_iam_member import ProjectIamMember
+from cdktf_cdktf_provider_google.service_account_iam_binding import ServiceAccountIamBinding
 
 class StandardSecrets(Construct):
     def __init__(self, scope: Construct, id: str, secret_ids: list[str]):
