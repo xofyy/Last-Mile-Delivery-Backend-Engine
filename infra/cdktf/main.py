@@ -49,6 +49,7 @@ class DeliveryStack(TerraformStack):
         vpc = StandardVPC(self, "networking", config=net_config)
 
         # --- 2. Compute (Using Config Object) ---
+        # Try changing min_nodes to 0 or machine_type to "n1-standard-1" to see validation fail!
         cluster_config = ClusterConfig(
             project_id=project_id,
             region=region,
