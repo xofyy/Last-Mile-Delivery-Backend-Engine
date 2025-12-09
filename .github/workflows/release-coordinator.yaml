@@ -100,5 +100,3 @@ jobs:
               --body "Automated PR created because ALL tests (Backend, AI, Infra) passed on develop." \
               --label "automated-pr" || echo "PR likely already exists"
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
