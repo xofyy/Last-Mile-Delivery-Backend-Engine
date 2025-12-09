@@ -1,0 +1,74 @@
+name: Release Coordinator
+
+on:
+  workflow_run:
+    workflows: ["Build and Deploy to GKE", "Production CI/CD Pipeline", "Infrastructure Policy Check"]
+    types:
+      - completed
+    branches:
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  check-and-pr:
+    name: Check Status & Create PR
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify All Workflows Passed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "Checking workflow statuses for commit: $COMMIT_SHA"
+          
+          # List of workflows that MUST pass
+          REQUIRED_WORKFLOWS=("Build and Deploy to GKE" "Production CI/CD Pipeline" "Infrastructure Policy Check")
+          
+          ALL_PASSED=true
+          
+          for workflow in "${REQUIRED_WORKFLOWS[@]}"; do
+            # Get the conclusion of the latest run for this commit and workflow name
+            # Returns "success", "failure", "skipped", etc.
+            STATUS=$(gh run list --commit "$COMMIT_SHA" --workflow "$workflow" --json conclusion --jq '.[0].conclusion')
+            
+            echo "Workflow: '$workflow' -> Status: $STATUS"
+            
+            # If status is null (didn't run due to path filters), treat as success (skipped safely)
+            if [[ -z "$STATUS" || "$STATUS" == "skipped" ]]; then
+              echo "  -> Considered PASS (Skipped/Not Triggered)"
+              continue
+            fi
+            
+            if [[ "$STATUS" != "success" ]]; then
+              echo "  -> FAILURE! (Expected success)"
+              ALL_PASSED=false
+              break
+            fi
+          done
+
+          if [[ "$ALL_PASSED" == "false" ]]; then
+            echo "Not all workflows passed. Exiting."
+            exit 1
+          else
+            echo "All workflows passed! Proceeding to PR."
+          fi
+
+      - name: Create Release PR
+        run: |
+          gh pr create \
+            --base main \
+            --head develop \
+            --title "Release: Promote Develop to Main" \
+            --body "Automated PR created because ALL tests (Backend, AI, Infra) passed on develop." \
+            --label "automated-pr" || echo "PR likely already exists"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

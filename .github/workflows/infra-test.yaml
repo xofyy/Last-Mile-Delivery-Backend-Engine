@@ -1,0 +1,60 @@
+name: Infrastructure Policy Check
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'infra/cdktf/**'
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'infra/cdktf/**'
+
+defaults:
+  run:
+    working-directory: ./infra/cdktf
+
+jobs:
+  validate-and-test:
+    name: Validate & Test (CDKTF)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Setup Node.js (for CDKTF CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: |
+          npm install --global cdktf-cli
+          pip install -r requirements.txt
+
+      - name: Run Policy Tests (Pytest)
+        run: |
+          pytest
+        env:
+          ENV: test
+          GCP_PROJECT_ID: test-project
+          GCP_REGION: us-central1
+
+      - name: Verify Synthesis (Build Check)
+        run: |
+          cdktf synth
+        env:
+          ENV: test
+          GCP_PROJECT_ID: test-project
+          GCP_REGION: us-central1

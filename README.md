@@ -143,6 +143,20 @@ The project uses **Terraform** to provision a production-ready environment on Go
     terraform apply
     ```
 
+### ⚡ Infrastructure Modernization (CDKTF)
+Alternatively, the project supports **CDKTF (Cloud Development Kit for Terraform)**, allowing infrastructure to be defined in **Python**. This approach enables:
+- **Modular Library:** Reusable constructs (`infrastructure-lib`) effectively acting as a private SDK.
+- **Policy as Code:** Validation logic (e.g., Cost Control, Prod Safety) embedded in configuration objects.
+- **Unit Testing:** `pytest` validation for infrastructure logic before deployment.
+
+**Usage:**
+```bash
+cd infra/cdktf
+pip install -r requirements.txt
+pytest                  # Run policy tests
+ENV=prod python main.py # Synthesize Terraform JSON
+```
+
 ## ☸️ Kubernetes Deployment (Helm)
 
 We use **Helm Charts** to manage Kubernetes manifests dynamically for different environments.
