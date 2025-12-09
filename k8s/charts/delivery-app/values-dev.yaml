@@ -4,14 +4,14 @@ backend:
   replicaCount: 1
   resources:
     requests:
-      cpu: "10m"      
-      memory: "512Mi" 
+      cpu: "10m"
+      memory: "512Mi"
     limits:
       cpu: "1000m"
       memory: "1536Mi"
   livenessProbe:
-    initialDelaySeconds: 90  
-    periodSeconds: 15         
+    initialDelaySeconds: 90
+    periodSeconds: 15
     failureThreshold: 5
   readinessProbe:
     initialDelaySeconds: 90
@@ -19,7 +19,8 @@ backend:
     failureThreshold: 5
   env:
     springProfile: "dev" # Activates dev profile in the application
-
+  image:
+    tag: 5077daa683758913ad72c6ef6f65dfe399580e21
 ai:
   replicaCount: 1
   resources:
@@ -29,7 +30,8 @@ ai:
     limits:
       cpu: "500m"
       memory: "512Mi"
-
+  image:
+    tag: 5077daa683758913ad72c6ef6f65dfe399580e21
 postgres:
   storage: "1Gi" # Dev for small disk is enough
   resources:
@@ -39,7 +41,6 @@ postgres:
     limits:
       cpu: "500m"
       memory: "512Mi"
-
 rabbitmq:
   resources:
     requests:
@@ -48,7 +49,6 @@ rabbitmq:
     limits:
       cpu: "500m"
       memory: "512Mi"
-
 redis:
   resources:
     requests:
@@ -57,7 +57,6 @@ redis:
     limits:
       cpu: "200m"
       memory: "256Mi"
-
 # Dev environment LoadBalancer is expensive, use ClusterIP
 # backend:
 #   service:
