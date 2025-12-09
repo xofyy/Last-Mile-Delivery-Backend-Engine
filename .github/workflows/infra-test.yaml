@@ -33,6 +33,12 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+          terraform_wrapper: false
+
       - name: Setup Node.js (for CDKTF CLI)
         uses: actions/setup-node@v4
         with:
