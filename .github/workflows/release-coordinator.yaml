@@ -85,22 +85,20 @@ jobs:
 
           if [[ "$ALL_PASSED" == "false" ]]; then
             echo "Not all workflows passed/completed yet. Exiting."
-            exit 0 # Exit 0 to stay green, but do nothing
+            exit 0
           else
             echo "All required workflows passed! Proceeding to PR."
+            
+            # 1. Ensure Label Exists
+            gh label create "automated-pr" --color "0E8A16" --description "Created by Release Coordinator" --force || true
+
+            # 2. Create PR
+            gh pr create \
+              --base main \
+              --head develop \
+              --title "Release: Promote Develop to Main" \
+              --body "Automated PR created because ALL tests (Backend, AI, Infra) passed on develop." \
+              --label "automated-pr" || echo "PR likely already exists"
           fi
-
-      - name: Create Release PR
-        run: |
-          # 1. Ensure Label Exists
-          gh label create "automated-pr" --color "0E8A16" --description "Created by Release Coordinator" --force || true
-
-          # 2. Create PR
-          gh pr create \
-            --base main \
-            --head develop \
-            --title "Release: Promote Develop to Main" \
-            --body "Automated PR created because ALL tests (Backend, AI, Infra) passed on develop." \
-            --label "automated-pr" || echo "PR likely already exists"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

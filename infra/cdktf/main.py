@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Final CI/CD Verification Trigger
 from constructs import Construct
 from cdktf import App, TerraformStack, TerraformOutput
 from cdktf_cdktf_provider_google.provider import GoogleProvider
