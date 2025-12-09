@@ -2,16 +2,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.ai.name }}
+  name: {{ include "delivery-app.fullname" . }}-ai
+  labels:
+    {{- include "delivery-app.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.ai.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.ai.name }}
+      app: {{ include "delivery-app.fullname" . }}-ai
   template:
     metadata:
       labels:
-        app: {{ .Values.ai.name }}
+        app: {{ include "delivery-app.fullname" . }}-ai
     spec:
       containers:
       - name: {{ .Values.ai.name }}
@@ -61,7 +63,9 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.backend.name }}
+  name: {{ include "delivery-app.fullname" . }}-backend
+  labels:
+    {{- include "delivery-app.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.backend.replicaCount }}
   strategy:
@@ -69,11 +73,11 @@ spec:
   progressDeadlineSeconds: 1200
   selector:
     matchLabels:
-      app: {{ .Values.backend.name }}
+      app: {{ include "delivery-app.fullname" . }}-backend
   template:
     metadata:
       labels:
-        app: {{ .Values.backend.name }}
+        app: {{ include "delivery-app.fullname" . }}-backend
     spec:
       containers:
       - name: {{ .Values.backend.name }}
@@ -138,4 +142,4 @@ spec:
               name: delivery-secrets
               key: jwt-secret
         - name: APP_AI_SERVICE_URL
-          value: "http://{{ .Values.ai.name }}:{{ .Values.ai.containerPort }}"
+          value: "http://{{ include "delivery-app.fullname" . }}-ai:{{ .Values.ai.containerPort }}"

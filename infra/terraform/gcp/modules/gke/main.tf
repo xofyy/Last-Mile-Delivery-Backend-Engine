@@ -41,10 +41,18 @@ resource "google_container_cluster" "primary" {
 }
 
 resource "google_container_node_pool" "primary_nodes" {
-  name       = "${var.cluster_name}-node-pool"
-  location   = var.zone
-  cluster    = google_container_cluster.primary.name
-  node_count = var.node_count
+  name     = "${var.cluster_name}-node-pool"
+  location = var.zone
+  cluster  = google_container_cluster.primary.name
+
+  # Autoscaling configuration
+  initial_node_count = var.node_count
+
+  autoscaling {
+    min_node_count  = var.min_node_count
+    max_node_count  = var.max_node_count
+    location_policy = "ANY"
+  }
 
   node_config {
     spot         = true

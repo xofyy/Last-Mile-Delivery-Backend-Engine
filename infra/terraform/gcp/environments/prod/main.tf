@@ -45,6 +45,8 @@ module "gke" {
   network_name           = module.networking.network_name
   subnet_name            = module.networking.subnet_name
   node_count             = var.node_count
+  min_node_count         = var.min_node_count
+  max_node_count         = var.max_node_count
   machine_type           = var.machine_type
   master_ipv4_cidr_block = var.master_ipv4_cidr_block
   disk_size_gb           = var.disk_size_gb

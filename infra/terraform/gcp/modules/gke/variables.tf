@@ -24,8 +24,20 @@ variable "subnet_name" {
 }
 
 variable "node_count" {
-  description = "Number of nodes in the node pool"
+  description = "Initial number of nodes in the node pool (superseded by autoscaler)"
   type        = number
+}
+
+variable "min_node_count" {
+  description = "Minimum number of nodes for autoscaling"
+  type        = number
+  default     = 1
+}
+
+variable "max_node_count" {
+  description = "Maximum number of nodes for autoscaling"
+  type        = number
+  default     = 3
 }
 
 variable "machine_type" {

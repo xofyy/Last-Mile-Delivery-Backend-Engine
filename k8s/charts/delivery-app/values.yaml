@@ -19,6 +19,13 @@ backend:
     type: LoadBalancer
     port: 80
   # Resources (Minimal default)
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
   resources:
     requests:
       cpu: "50m"
@@ -51,6 +58,12 @@ ai:
   service:
     type: ClusterIP
     port: 8000
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+  
   resources:
     requests:
       cpu: "50m"

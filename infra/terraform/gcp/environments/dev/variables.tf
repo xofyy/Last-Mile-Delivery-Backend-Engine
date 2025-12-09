@@ -27,6 +27,18 @@ variable "node_count" {
   default     = 1
 }
 
+variable "min_node_count" {
+  description = "Minimum number of nodes for autoscaling"
+  type        = number
+  default     = 1
+}
+
+variable "max_node_count" {
+  description = "Maximum number of nodes for autoscaling"
+  type        = number
+  default     = 2 # Keep small for dev
+}
+
 variable "machine_type" {
   description = "Machine type for the node pool"
   type        = string
