@@ -51,6 +51,9 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: delivery-backend
 
 resilience4j:
   circuitbreaker:

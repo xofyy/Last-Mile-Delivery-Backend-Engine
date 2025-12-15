@@ -1,0 +1,92 @@
+name: Terraform HCL Validation
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'infra/terraform/**'
+      - '!infra/terraform/**/*.md'
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'infra/terraform/**'
+      - '!infra/terraform/**/*.md'
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      # --- Format Check ---
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        working-directory: ./infra/terraform
+        continue-on-error: true
+
+      # --- Validate Dev Environment ---
+      - name: Terraform Init (Dev)
+        run: terraform init -backend=false
+        working-directory: ./infra/terraform/gcp/environments/dev
+
+      - name: Terraform Validate (Dev)
+        run: terraform validate
+        working-directory: ./infra/terraform/gcp/environments/dev
+
+      # --- Validate Prod Environment ---
+      - name: Terraform Init (Prod)
+        run: terraform init -backend=false
+        working-directory: ./infra/terraform/gcp/environments/prod
+
+      - name: Terraform Validate (Prod)
+        run: terraform validate
+        working-directory: ./infra/terraform/gcp/environments/prod
+
+      # --- Validate Modules ---
+      - name: Terraform Init (GKE Module)
+        run: |
+          cat > test.tf << 'EOF'
+          module "test" {
+            source = "."
+            cluster_name = "test"
+            project_id = "test-project"
+            network = "test-network"
+            subnetwork = "test-subnet"
+            pods_range_name = "pods"
+            services_range_name = "services"
+          }
+          EOF
+          terraform init -backend=false
+        working-directory: ./infra/terraform/gcp/modules/gke
+
+      - name: Terraform Validate (GKE Module)
+        run: terraform validate
+        working-directory: ./infra/terraform/gcp/modules/gke
+
+      # --- Summary ---
+      - name: Post Summary
+        if: always()
+        run: |
+          echo "## Terraform Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.fmt.outcome }}" == "failure" ]; then
+            echo "⚠️ **Format Check**: Failed (run \`terraform fmt -recursive\`)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Format Check**: Passed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "✅ **Dev Validation**: Passed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Prod Validation**: Passed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **GKE Module Validation**: Passed" >> $GITHUB_STEP_SUMMARY

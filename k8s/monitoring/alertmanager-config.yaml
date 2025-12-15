@@ -1,0 +1,93 @@
+# Alertmanager Configuration for Delivery Backend
+# Sends alerts to Slack channel
+# Slack webhook URL is loaded from Kubernetes Secret (see k8s/secrets/monitoring-external-secret.yaml)
+
+global:
+  # Reads from mounted secret file (set via extraSecretMounts in Helm values)
+  slack_api_url_file: '/etc/alertmanager/secrets/slack-webhook-url'
+  resolve_timeout: 5m
+
+# Routing tree for alerts
+route:
+  # Default receiver
+  receiver: 'slack-notifications'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'severity', 'service']
+  
+  # Wait time before sending first notification
+  group_wait: 30s
+  
+  # Wait time before sending updates
+  group_interval: 5m
+  
+  # Repeat interval for unresolved alerts
+  repeat_interval: 4h
+  
+  # Child routes for specific alert types
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      repeat_interval: 1h
+      continue: false
+    
+    # Warning alerts - less urgent
+    - match:
+        severity: warning
+      receiver: 'slack-notifications'
+      repeat_interval: 4h
+
+# Notification receivers
+receivers:
+  # Standard notifications channel
+  - name: 'slack-notifications'
+    slack_configs:
+      - channel: '#delivery-alerts'
+        send_resolved: true
+        icon_emoji: ':warning:'
+        title: '{{ .Status | toUpper }}{{ if eq .Status "firing" }} 🔥{{ else }} ✅{{ end }} {{ .CommonLabels.alertname }}'
+        text: |-
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Service:* {{ .Labels.service | default "unknown" }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        actions:
+          - type: button
+            text: 'Grafana Dashboard'
+            url: 'http://localhost:3000/d/delivery-backend'
+          - type: button
+            text: 'Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
+
+  # Critical alerts - On-Call channel
+  - name: 'slack-critical'
+    slack_configs:
+      - channel: '#delivery-oncall'
+        send_resolved: true
+        icon_emoji: ':rotating_light:'
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+        title: '🚨 CRITICAL: {{ .CommonLabels.alertname }}'
+        text: |-
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Service:* {{ .Labels.service | default "unknown" }}
+          *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+          
+          @oncall - Please investigate immediately!
+
+# Inhibition rules - suppress less critical alerts when more critical ones fire
+inhibit_rules:
+  # If critical is firing, suppress warning for same alertname
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
