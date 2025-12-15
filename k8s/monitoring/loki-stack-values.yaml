@@ -13,6 +13,9 @@ prometheus:
   server:
     persistentVolume:
       enabled: false
+    # Enable exemplar storage for distributed tracing support
+    extraArgs:
+      enable-feature: exemplar-storage
   # Load custom alert rules
   serverFiles:
     alerting_rules.yml:

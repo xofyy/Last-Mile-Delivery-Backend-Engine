@@ -9,13 +9,22 @@ backend:
     targetCPUUtilizationPercentage: 70
   resources:
     requests:
-      cpu: "10m" # Minimal CPU to force scheduling
-      memory: "512Mi" # Guaranteed RAM
+      cpu: "200m"  # Realistic request for proper HPA calculation
+      memory: "512Mi"
     limits:
       cpu: "1000m" # Reduced limit
       memory: "1024Mi"
   env:
     springProfile: "prod"
+  # Increased probe delays for slow Spring Boot startup (~50s)
+  livenessProbe:
+    initialDelaySeconds: 90
+    periodSeconds: 10
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 3
   image:
     tag: a65583866f6a82f7a6641ccbe536fd214dda6bc7
 ai:
