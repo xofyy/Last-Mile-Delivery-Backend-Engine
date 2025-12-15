@@ -1,0 +1,172 @@
+# SLI/SLO Recording Rules for Delivery Backend
+# These rules pre-calculate SLI metrics for efficient SLO tracking
+
+groups:
+  # ============================================
+  # SLI RECORDING RULES
+  # Pre-calculate metrics for dashboard efficiency
+  # ============================================
+  - name: sli-recording-rules
+    interval: 30s
+    rules:
+      # ─────────────────────────────────────────
+      # AVAILABILITY SLI
+      # Percentage of successful requests (non-5xx)
+      # ─────────────────────────────────────────
+      
+      # 5-minute availability ratio
+      - record: sli:availability:ratio_5m
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status!~"5..", application="delivery-backend"}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[5m]))
+
+      # 1-hour availability ratio  
+      - record: sli:availability:ratio_1h
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status!~"5..", application="delivery-backend"}[1h]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[1h]))
+
+      # 24-hour availability ratio
+      - record: sli:availability:ratio_24h
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status!~"5..", application="delivery-backend"}[24h]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[24h]))
+
+      # 30-day availability ratio (for monthly SLO)
+      - record: sli:availability:ratio_30d
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status!~"5..", application="delivery-backend"}[30d]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[30d]))
+
+      # ─────────────────────────────────────────
+      # LATENCY SLI
+      # Percentage of requests under threshold
+      # ─────────────────────────────────────────
+      
+      # Requests under 500ms (P99 target)
+      - record: sli:latency:ratio_500ms_5m
+        expr: |
+          sum(rate(http_server_requests_seconds_bucket{le="0.5", application="delivery-backend"}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[5m]))
+
+      # Requests under 500ms (1 hour)
+      - record: sli:latency:ratio_500ms_1h
+        expr: |
+          sum(rate(http_server_requests_seconds_bucket{le="0.5", application="delivery-backend"}[1h]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[1h]))
+
+      # Requests under 500ms (30 days)
+      - record: sli:latency:ratio_500ms_30d
+        expr: |
+          sum(rate(http_server_requests_seconds_bucket{le="0.5", application="delivery-backend"}[30d]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[30d]))
+
+      # P99 Latency value
+      - record: sli:latency:p99_5m
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application="delivery-backend"}[5m])) by (le))
+
+      # P50 Latency value (median)
+      - record: sli:latency:p50_5m
+        expr: |
+          histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application="delivery-backend"}[5m])) by (le))
+
+      # ─────────────────────────────────────────
+      # ERROR BUDGET CALCULATIONS
+      # ─────────────────────────────────────────
+      
+      # Error budget remaining (availability)
+      # SLO Target: 99.9% = 0.999
+      # Error budget = 1 - SLO = 0.001 (0.1%)
+      - record: slo:availability:error_budget_remaining
+        expr: |
+          1 - ((1 - sli:availability:ratio_30d) / 0.001)
+
+      # Error budget burn rate (how fast we're consuming budget)
+      # >1 means burning faster than allowed
+      - record: slo:availability:burn_rate_1h
+        expr: |
+          (1 - sli:availability:ratio_1h) / 0.001
+
+      # Error budget remaining (latency)
+      # SLO Target: 99% of requests under 500ms
+      - record: slo:latency:error_budget_remaining
+        expr: |
+          1 - ((1 - sli:latency:ratio_500ms_30d) / 0.01)
+
+  # ============================================
+  # SLO BURN RATE ALERTS
+  # Multi-window, multi-burn-rate alerting
+  # ============================================
+  - name: slo-burn-rate-alerts
+    rules:
+      # Fast burn: 14.4x burn rate over 1 hour
+      # Will exhaust budget in ~2 hours
+      - alert: SLOAvailabilityFastBurn
+        expr: |
+          slo:availability:burn_rate_1h > 14.4
+          and
+          (1 - sli:availability:ratio_5m) > 0.001
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "🚨 Availability SLO: Fast burn rate detected"
+          description: "Burn rate is {{ $value | printf \"%.1f\" }}x. Budget will be exhausted in ~2 hours at this rate."
+          runbook_url: "https://github.com/xofyy/Last-Mile-Delivery-Backend-Engine/blob/main/docs/slo/error-budget-policy.md"
+
+      # Slow burn: 3x burn rate over 6 hours
+      # Will exhaust budget in ~10 days
+      - alert: SLOAvailabilitySlowBurn
+        expr: |
+          slo:availability:burn_rate_1h > 3
+          and
+          slo:availability:burn_rate_1h <= 14.4
+        for: 1h
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "⚠️ Availability SLO: Slow burn rate detected"
+          description: "Burn rate is {{ $value | printf \"%.1f\" }}x. Budget consumption is elevated."
+
+      # Error budget exhausted
+      - alert: SLOErrorBudgetExhausted
+        expr: slo:availability:error_budget_remaining < 0
+        for: 5m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "🔴 Error Budget Exhausted!"
+          description: "30-day error budget is depleted. Feature freeze recommended."
+
+      # Error budget low warning
+      - alert: SLOErrorBudgetLow
+        expr: slo:availability:error_budget_remaining < 0.25 and slo:availability:error_budget_remaining >= 0
+        for: 5m
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "⚠️ Error Budget Low"
+          description: "Only {{ $value | humanizePercentage }} of error budget remaining."
+
+      # Latency SLO breach
+      - alert: SLOLatencyBreach
+        expr: sli:latency:ratio_500ms_1h < 0.99
+        for: 10m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "⚠️ Latency SLO not being met"
+          description: "Only {{ $value | humanizePercentage }} of requests are under 500ms (target: 99%)."

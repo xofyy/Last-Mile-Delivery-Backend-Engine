@@ -2,7 +2,7 @@ name: Release Coordinator
 
 on:
   workflow_run:
-    workflows: ["Build and Deploy to GKE", "Production CI/CD Pipeline", "Infrastructure Policy Check"]
+    workflows: ["Build and Deploy to GKE", "Production CI/CD Pipeline", "Infrastructure Policy Check", "Terraform HCL Validation"]
     types:
       - completed
     branches:
@@ -46,7 +46,7 @@ jobs:
           fi
           
           # List of workflows that MUST pass
-          REQUIRED_WORKFLOWS=("Build and Deploy to GKE" "Production CI/CD Pipeline" "Infrastructure Policy Check")
+          REQUIRED_WORKFLOWS=("Build and Deploy to GKE" "Production CI/CD Pipeline" "Infrastructure Policy Check" "Terraform HCL Validation")
           
           ALL_PASSED=true
           

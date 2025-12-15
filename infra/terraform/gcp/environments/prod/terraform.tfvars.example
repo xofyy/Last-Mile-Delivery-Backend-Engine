@@ -4,7 +4,7 @@ zone       = "us-central1-a"
 
 cluster_name = "delivery-cluster-prod"
 node_count   = 2
-machine_type = "e2-medium"
+machine_type = "e2-standard-2"
 
 vpc_name    = "delivery-vpc-prod"
 subnet_name = "delivery-subnet-prod"

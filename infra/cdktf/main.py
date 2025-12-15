@@ -57,7 +57,7 @@ class DeliveryStack(TerraformStack):
             env=env,
             min_nodes=1,
             max_nodes=3,
-            machine_type="e2-medium",
+            machine_type="e2-standard-2",  # Upgraded for Istio support (8GB RAM)
             spot_instances=True 
         )
 

@@ -26,7 +26,7 @@ class ClusterConfig:
     env: str
     
     # Defaults with Validation Rules
-    machine_type: str = "e2-medium"
+    machine_type: str = "e2-standard-2"
     node_count: int = 1
     min_nodes: int = 1
     max_nodes: int = 3

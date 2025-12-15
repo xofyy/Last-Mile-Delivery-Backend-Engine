@@ -1,0 +1,169 @@
+# Prometheus Alert Rules for Delivery Backend Engine
+# These rules should be loaded by Prometheus server
+
+groups:
+  # ============================================
+  # APPLICATION ALERTS
+  # ============================================
+  - name: delivery-backend-alerts
+    rules:
+      # High Error Rate (>5% 5xx errors in 5 min)
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5..", application="delivery-backend"}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count{application="delivery-backend"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: delivery-backend
+        annotations:
+          summary: "High error rate detected on Delivery Backend"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://github.com/xofyy/Last-Mile-Delivery-Backend-Engine/blob/main/docs/runbooks/high-error-rate.md"
+
+      # High Latency (P99 > 1s)
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application="delivery-backend"}[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: delivery-backend
+        annotations:
+          summary: "High P99 latency detected"
+          description: "P99 latency is {{ $value | humanizeDuration }}"
+
+      # High Latency (P50 > 500ms) - User experience impact
+      - alert: HighLatencyP50
+        expr: |
+          histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application="delivery-backend"}[5m])) by (le)) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: delivery-backend
+        annotations:
+          summary: "High median latency detected"
+          description: "P50 latency is {{ $value | humanizeDuration }}"
+
+      # Database Connection Pool Exhausted
+      - alert: DatabaseConnectionPoolExhausted
+        expr: hikaricp_connections_active{application="delivery-backend"} >= hikaricp_connections_max{application="delivery-backend"} * 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: delivery-backend
+        annotations:
+          summary: "Database connection pool is nearly exhausted"
+          description: "Active connections: {{ $value }}"
+
+      # No Active DB Connections (likely connection failure)
+      - alert: DatabaseConnectionFailure
+        expr: hikaricp_connections_active{application="delivery-backend"} == 0 and hikaricp_connections_max{application="delivery-backend"} > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: delivery-backend
+        annotations:
+          summary: "No active database connections"
+          description: "All database connections appear to be down"
+
+  # ============================================
+  # KUBERNETES ALERTS
+  # ============================================
+  - name: kubernetes-alerts
+    rules:
+      # Pod Crash Looping
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total{namespace="default"}[15m]) * 60 * 15 > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash looping"
+          description: "Pod has restarted {{ $value | humanize }} times in the last 15 minutes"
+
+      # Pod Not Ready
+      - alert: PodNotReady
+        expr: kube_pod_status_ready{condition="true", namespace="default"} == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is not ready"
+          description: "Pod has been in non-ready state for more than 10 minutes"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          container_memory_usage_bytes{namespace="default", container!="POD", container!=""}
+          /
+          container_spec_memory_limit_bytes{namespace="default", container!="POD", container!=""} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.container }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: |
+          rate(container_cpu_usage_seconds_total{namespace="default", container!="POD", container!=""}[5m])
+          /
+          container_spec_cpu_quota{namespace="default", container!="POD", container!=""} * 100000 > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.container }}"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+  # ============================================
+  # INFRASTRUCTURE ALERTS
+  # ============================================
+  - name: infrastructure-alerts
+    rules:
+      # RabbitMQ Queue Backlog
+      - alert: RabbitMQHighBacklog
+        expr: rabbitmq_queue_messages_ready > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: rabbitmq
+        annotations:
+          summary: "RabbitMQ queue backlog is growing"
+          description: "Queue {{ $labels.queue }} has {{ $value | humanize }} messages waiting"
+
+      # Redis Memory Usage High
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # PostgreSQL Too Many Connections
+      - alert: PostgreSQLTooManyConnections
+        expr: pg_stat_activity_count > pg_settings_max_connections * 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL has too many connections"
+          description: "{{ $value | humanize }} active connections"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is critically low"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
