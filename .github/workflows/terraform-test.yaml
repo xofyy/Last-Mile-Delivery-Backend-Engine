@@ -60,7 +60,7 @@ jobs:
         run: |
           cat > test.tf << 'EOF'
           module "test" {
-            source = "."
+            source = "./"
             cluster_name = "test"
             project_id = "test-project"
             network = "test-network"
