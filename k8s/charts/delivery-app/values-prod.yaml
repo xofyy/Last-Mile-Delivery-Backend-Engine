@@ -9,7 +9,7 @@ backend:
     targetCPUUtilizationPercentage: 70
   resources:
     requests:
-      cpu: "200m"  # Realistic request for proper HPA calculation
+      cpu: "200m" # Realistic request for proper HPA calculation
       memory: "512Mi"
     limits:
       cpu: "1000m" # Reduced limit
@@ -26,7 +26,7 @@ backend:
     periodSeconds: 10
     failureThreshold: 3
   image:
-    tag: 8054f65a3090eccf1713cfffbe437cd59140453d
+    tag: 3a6cdcbfc7463f8636a8c70972d709f836beafb3
 ai:
   replicaCount: 1 # Reduced to 1 to fit in small cluster
   autoscaling:
@@ -42,6 +42,6 @@ ai:
       cpu: "1000m"
       memory: "1024Mi"
   image:
-    tag: 8054f65a3090eccf1713cfffbe437cd59140453d
+    tag: 3a6cdcbfc7463f8636a8c70972d709f836beafb3
 postgres:
   storage: "10Gi" # Prod data for larger disk
